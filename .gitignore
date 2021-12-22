@@ -1,0 +1,8 @@
+results.xml
+sim_build
+*.vcd
+formal/raid0
+formal/raid0_write
+formal/sync_fifo
+formal/raid1
+formal/raid5

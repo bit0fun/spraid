@@ -1,0 +1,13 @@
+[options]
+mode prove
+
+[engines]
+smtbmc
+
+[script]
+read -formal raid0.v raid0_write.v
+prep -top raid0
+
+[files]
+src/raid0.v
+src/raid0_write.v

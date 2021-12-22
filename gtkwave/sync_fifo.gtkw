@@ -1,0 +1,43 @@
+[*]
+[*] GTKWave Analyzer v3.3.109 (w)1999-2020 BSI
+[*] Sat Dec 18 23:09:19 2021
+[*]
+[dumpfile] "/home/bit0fun/Documents/workspace/ASIC/zero-to-asic-course/project/formal/sync_fifo/engine_0/trace.vcd"
+[dumpfile_mtime] "Sat Dec 18 23:08:52 2021"
+[dumpfile_size] 3325
+[savefile] "/home/bit0fun/Documents/workspace/ASIC/zero-to-asic-course/project/gtkwave/sync_fifo.gtkw"
+[timestart] 0
+[size] 1287 774
+[pos] -1 -1
+*-3.652680 26 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[sst_width] 223
+[signals_width] 218
+[sst_expanded] 1
+[sst_vpaned_height] 208
+@28
+sync_fifo.clk
+sync_fifo.reset
+@22
+sync_fifo.din[31:0]
+sync_fifo.dout[31:0]
+@28
+sync_fifo.fifo_empty
+sync_fifo.fifo_full
+sync_fifo.write_en
+sync_fifo.read_en
+@29
+sync_fifo.counter[2:0]
+@28
+sync_fifo.readptr[2:0]
+sync_fifo.writeptr[2:0]
+@22
+sync_fifo.buffer<0>[31:0]
+sync_fifo.buffer<1>[31:0]
+sync_fifo.buffer<2>[31:0]
+sync_fifo.buffer<3>[31:0]
+sync_fifo.buffer<4>[31:0]
+sync_fifo.buffer<5>[31:0]
+sync_fifo.buffer<6>[31:0]
+sync_fifo.buffer<7>[31:0]
+[pattern_trace] 1
+[pattern_trace] 0

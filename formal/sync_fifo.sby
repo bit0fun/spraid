@@ -1,0 +1,12 @@
+[options]
+mode prove
+
+[engines]
+smtbmc
+
+[script]
+read -formal sync_fifo.v
+prep -top sync_fifo 
+
+[files]
+src/sync_fifo.v

@@ -1,0 +1,12 @@
+[options]
+mode prove
+
+[engines]
+smtbmc
+
+[script]
+read -formal raid1.v
+prep -top raid1
+
+[files]
+src/raid1.v

@@ -1,0 +1,47 @@
+[*]
+[*] GTKWave Analyzer v3.3.109 (w)1999-2020 BSI
+[*] Wed Dec 22 02:03:46 2021
+[*]
+[dumpfile] "/home/bit0fun/Documents/workspace/ASIC/zero-to-asic-course/project/spi.vcd"
+[dumpfile_mtime] "Wed Dec 22 01:59:22 2021"
+[dumpfile_size] 905
+[savefile] "/home/bit0fun/Documents/workspace/ASIC/zero-to-asic-course/project/gtkwave/spi.gtkw"
+[timestart] 0
+[size] 1279 741
+[pos] 65 -78
+*-14.529012 3700 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[sst_width] 223
+[signals_width] 179
+[sst_expanded] 1
+[sst_vpaned_height] 196
+@200
+-Host Interface
+@28
+spi.reset
+spi.clk_in
+spi.read
+spi.write
+@22
+spi.din[7:0]
+spi.dout[7:0]
+@200
+-
+-SPI Interface
+@28
+spi.cs
+spi.sdi
+spi.sdo
+spi.clk_out
+@200
+-
+-Internal Signals
+@28
+spi.op[2:0]
+@22
+spi.counter[3:0]
+spi.data_r[7:0]
+spi.data_w[7:0]
+@28
+spi.clk_gate
+[pattern_trace] 1
+[pattern_trace] 0
