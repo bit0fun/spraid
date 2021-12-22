@@ -6,3 +6,4 @@ formal/raid0_write
 formal/sync_fifo
 formal/raid1
 formal/raid5
+test/__pycache__
