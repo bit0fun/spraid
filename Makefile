@@ -1,6 +1,6 @@
 # Tools
 VC=iverilog
-VSIM=vvp
+VSIM=vvp -lxt2
 
 #cocotb setup
 COCOTB_MODULES=$$(cocotb-config --prefix)/cocotb/libs 
@@ -17,7 +17,9 @@ SEED = 1
 NEXTPNR_FREQ=20
 
 # Verilog source for testing SPI Flash 
-TEST_SRC = sim_src/W25Q80DL.v
+#TEST_SRC = sim_src/W25Q80DL.v
+TEST_SRC = sim_src/MX25V1006F.v
+
 
 export COCOTB_REDUCED_LOG_FMT=1
 
@@ -33,6 +35,12 @@ test_spi: src/spi.v test/dump_spi.v
 	rm -rf sim_build
 	mkdir -p sim_build
 	$(VC) -o sim_build/sim.vvp -s spi -s dump -g2012 $^
+	PYTHONOPTIMIZE=${NOASSERT} MODULE=test.$@ $(VSIM) $(VSIM_MODULES)
+
+test_flashtb: sim_src/flashtb.v test/dump_flashtb.v src/spi.v $(TEST_SRC) 
+	rm -rf sim_build
+	mkdir -p sim_build
+	$(VC) -o sim_build/sim.vvp -s flashtb -s dump -g2012 $^
 	PYTHONOPTIMIZE=${NOASSERT} MODULE=test.$@ $(VSIM) $(VSIM_MODULES)
 
 test_raid0: src/raid0.v src/raid0_write.v src/raid0_read.v test/dump_raid0.v test/dump_raid0_write.v test/dump_raid0_read.v

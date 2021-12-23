@@ -35,7 +35,7 @@ parameter JEDEC_ID_HI = 8'h40;
 parameter JEDEC_ID_LO = 8'h14;
 parameter	UNIQUE_ID = 64'hDC02030405060708;
 parameter ADDRESS_MASK = (NUM_PAGES * PAGESIZE) - 1;		// Note that NUM_PAGES must be a power of 2 for this simulation to work properly.
-`define MEM_FILENAME "MEM.TXT"		                      // Memory contents file(s)
+`define MEM_FILENAME "sim_src/mem.txt"		                      // Memory contents file(s)
 
 // The following registers define the main memory spaces of the
 // device.
