@@ -17,7 +17,7 @@ SEED = 1
 NEXTPNR_FREQ=20
 
 # Verilog source for testing SPI Flash 
-TEST_SRC = /home/bit0fun/Documents/workspace/Verilog_Models/W25Q80DL/W25Q80DL.v
+TEST_SRC = sim_src/W25Q80DL.v
 
 export COCOTB_REDUCED_LOG_FMT=1
 
