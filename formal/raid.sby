@@ -1,0 +1,17 @@
+[options]
+mode prove
+depth 100
+
+mode bmc
+depth 100
+
+
+[engines]
+smtbmc
+
+[script]
+read -formal raid.v
+prep -top raid
+
+[files]
+src/raid.v

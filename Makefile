@@ -43,6 +43,13 @@ test_flashtb: sim_src/flashtb.v test/dump_flashtb.v src/spi.v $(TEST_SRC)
 	$(VC) -o sim_build/sim.vvp -s flashtb -s dump -g2012 $^
 	PYTHONOPTIMIZE=${NOASSERT} MODULE=test.$@ $(VSIM) $(VSIM_MODULES)
 
+
+test_raid: src/raid.v test/dump_raid.v 
+	rm -rf sim_build
+	mkdir -p sim_build
+	$(VC) -o sim_build/sim.vvp -s raid -s dump -g2012 $^
+	PYTHONOPTIMIZE=${NOASSERT} MODULE=test.$@ $(VSIM) $(VSIM_MODULES)
+
 test_raid0: src/raid0.v src/raid0_write.v src/raid0_read.v test/dump_raid0.v test/dump_raid0_write.v test/dump_raid0_read.v
 	rm -rf sim_build
 	mkdir -p sim_build
