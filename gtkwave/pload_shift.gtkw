@@ -1,0 +1,30 @@
+[*]
+[*] GTKWave Analyzer v3.3.109 (w)1999-2020 BSI
+[*] Sat Dec 25 15:42:31 2021
+[*]
+[dumpfile] "/home/bit0fun/Documents/workspace/ASIC/zero-to-asic-course/project/pload_shift.vcd"
+[dumpfile_mtime] "Sat Dec 25 15:41:30 2021"
+[dumpfile_size] 802
+[savefile] "/home/bit0fun/Documents/workspace/ASIC/zero-to-asic-course/project/gtkwave/pload_shift.gtkw"
+[timestart] 0
+[size] 1920 1055
+[pos] -1 -1
+*-15.296413 145400 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[sst_width] 223
+[signals_width] 191
+[sst_expanded] 1
+[sst_vpaned_height] 306
+@28
+pload_shift.busy
+pload_shift.clk
+@22
+pload_shift.dcount[3:0]
+pload_shift.din[31:0]
+pload_shift.dout[7:0]
+@28
+pload_shift.enable
+pload_shift.reset
+@29
+pload_shift.op[1:0]
+[pattern_trace] 1
+[pattern_trace] 0

@@ -18,12 +18,13 @@ NEXTPNR_FREQ=20
 
 # Verilog source for testing SPI Flash 
 #TEST_SRC = sim_src/W25Q80DL.v
-TEST_SRC = sim_src/MX25V1006F.v
+NOR_TEST_SRC = sim_src/MX25V1006F.v
+FRAM_TEST_SRC = sim_src/FRAM_SPI.v sim_src/config.v
 
 
 export COCOTB_REDUCED_LOG_FMT=1
 
-all: test_spi test_raid0 test_raid1 test_raid5 test_flash_ctl test_spraid
+all: test_spi test_raid test_raid0 test_raid1 test_raid5 test_flash_ctl test_spraid
 
 test_fifo: src/sync_fifo.v test/dump_sync_fifo.v
 	rm -rf sim_build
@@ -37,10 +38,28 @@ test_spi: src/spi.v test/dump_spi.v
 	$(VC) -o sim_build/sim.vvp -s spi -s dump -g2012 $^
 	PYTHONOPTIMIZE=${NOASSERT} MODULE=test.$@ $(VSIM) $(VSIM_MODULES)
 
-test_flashtb: sim_src/flashtb.v test/dump_flashtb.v src/spi.v $(TEST_SRC) 
+test_pload_shift: src/pload_shift.v test/dump_pload_shift.v
 	rm -rf sim_build
 	mkdir -p sim_build
-	$(VC) -o sim_build/sim.vvp -s flashtb -s dump -g2012 $^
+	$(VC) -o sim_build/sim.vvp -s pload_shift -s dump -g2012 $^
+	PYTHONOPTIMIZE=${NOASSERT} MODULE=test.$@ $(VSIM) $(VSIM_MODULES)
+
+test_pread_shift: src/pread_shift.v test/dump_pread_shift.v
+	rm -rf sim_build
+	mkdir -p sim_build
+	$(VC) -o sim_build/sim.vvp -s pread_shift -s dump -g2012 $^
+	PYTHONOPTIMIZE=${NOASSERT} MODULE=test.$@ $(VSIM) $(VSIM_MODULES)
+
+test_flashtb_nor: sim_src/flashtb_nor.v test/dump_flashtb_nor.v src/spi.v $(NOR_TEST_SRC) 
+	rm -rf sim_build
+	mkdir -p sim_build
+	$(VC) -o sim_build/sim.vvp -s flashtb_nor -s dump -g2012 $^
+	PYTHONOPTIMIZE=${NOASSERT} MODULE=test.$@ $(VSIM) $(VSIM_MODULES)
+
+test_flashtb_fram: sim_src/flashtb_fram.v test/dump_flashtb_fram.v src/spi.v $(FRAM_TEST_SRC) 
+	rm -rf sim_build
+	mkdir -p sim_build
+	$(VC) -o sim_build/sim.vvp -s flashtb_fram -s dump -g2012 $^
 	PYTHONOPTIMIZE=${NOASSERT} MODULE=test.$@ $(VSIM) $(VSIM_MODULES)
 
 
