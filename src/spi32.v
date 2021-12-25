@@ -24,6 +24,9 @@ module spi32 (
 
 	);
 
+	/* Read flag to store for read at later state */
+	reg read_flag;
+
 	/* Statemachine definitons */
 	`define SPI_IDLE			0
 	`define SPI_WRITE_FIFO		1
@@ -40,10 +43,9 @@ module spi32 (
 	`define SPI_WRITE_FINISH	4
 	reg [2:0] write_state;
 
-	wire busy_rx;
+	wire spi_rx_ready;
 	wire tx_start;
 	assign tx_start = read | write;
-	reg	write_last;
 
 	/* Write bit conversion */
 	wire       write_shift_busy;
@@ -78,7 +80,6 @@ module spi32 (
 		.reset(reset),
 		.clk(clk),
 		.read_en(write_fifo_spi_en),
-//		.read_en( (spi_tx_ready && !write_fifo_empty) && (spi_state == `SPI_WRITE_OUT )),
 		.write_en(write_shift_busy),
 		.din(write_shift_out),
 		.dout(write_fifo_out),
@@ -117,7 +118,7 @@ module spi32 (
 		.i_TX_DV(write_fifo_spi_en),	/* Data valid pulse for i_TX_Byte */
 		.o_TX_Ready(spi_tx_ready),		/* Transmit ready for next byte */
 
-		.o_RX_DV(busy_rx),				/* Data valid pulse (1 clock cycle) */
+		.o_RX_DV(spi_rx_ready),				/* Data valid pulse (1 clock cycle) */
 		.o_RX_Byte(spi_out),			/* Data to read out */
 
 		.o_SPI_Clk(clk_out),
@@ -129,7 +130,7 @@ module spi32 (
 
 	always @(posedge clk or posedge reset) begin
 		if( reset ) begin
-			write_last <= 0;
+			read_flag <= 0;
 			spi_state <= `SPI_IDLE;
 			write_state <= `SPI_WRITE_START;
 			cs <= 1;
@@ -152,8 +153,10 @@ module spi32 (
 				end
 				else if( !write && read ) begin
 					/* Implement reads later */
-//					busy <= 1'b1;
-//					spi_state = `SPI_START_READ_FIFO;
+					busy <= 1'b1;
+					spi_state = `SPI_WRITE_FIFO;
+					/* Used to change states later */
+					read_flag <= 1'b1;
 				end
 
 
@@ -207,9 +210,15 @@ module spi32 (
 						if( spi_tx_ready ) begin
 							write_fifo_spi_en <= 1;
 						end
-						else begin
+						else if( !read_flag) begin
 							write_fifo_spi_en <= 0;
 					  		write_state <= `SPI_WRITE_FINISH;
+						end
+						else if( read_flag ) begin
+							/* Actually reading, so record data */
+							write_fifo_spi_en <= 0;
+					  		write_state <= `SPI_WRITE_START;
+							spi_state <= `SPI_READ_OUT;
 						end
 					end
 
@@ -221,15 +230,15 @@ module spi32 (
 					end
 
 				endcase 
-
-
-				if( spi_tx_ready && write_fifo_empty ) begin
-
-//					write_fifo_spi_en <= 0;
-
-				end
-				else if( !spi_tx_ready ) begin
+				if( !spi_tx_ready ) begin
 					write_fifo_spi_en <= 0;
+				end
+
+			end
+
+			`SPI_READ_OUT: begin
+				if( spi_rx_ready ) begin
+					spi_state <= `SPI_IDLE;
 				end
 
 			end
