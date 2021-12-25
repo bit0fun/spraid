@@ -1,0 +1,30 @@
+[*]
+[*] GTKWave Analyzer v3.3.109 (w)1999-2020 BSI
+[*] Sat Dec 25 16:16:53 2021
+[*]
+[dumpfile] "/home/bit0fun/Documents/workspace/ASIC/zero-to-asic-course/project/pread_shift.vcd"
+[dumpfile_mtime] "Sat Dec 25 16:16:40 2021"
+[dumpfile_size] 962
+[savefile] "/home/bit0fun/Documents/workspace/ASIC/zero-to-asic-course/project/gtkwave/pread_shift.gtkw"
+[timestart] 0
+[size] 1920 1055
+[pos] -1 -1
+*-15.315897 190800 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[sst_width] 223
+[signals_width] 179
+[sst_expanded] 1
+[sst_vpaned_height] 306
+@29
+pread_shift.clk
+@28
+pread_shift.busy
+pread_shift.done
+@22
+pread_shift.dcount[3:0]
+pread_shift.din[7:0]
+pread_shift.dout[31:0]
+@28
+pread_shift.enable
+pread_shift.reset
+[pattern_trace] 1
+[pattern_trace] 0
