@@ -3,7 +3,7 @@
 `timescale 1ns/1ns
 module sync_fifo 
 	#(	parameter 	FIFO_WIDTH		= 32,
-	 	parameter	FIFO_DEPTH		= 8
+	 	parameter	FIFO_DEPTH		= 4
 	)
 
 	(
@@ -36,8 +36,8 @@ module sync_fifo
 	assign fifo_full 	= (counter == FIFO_DEPTH-1);
 	assign fifo_empty 	= (counter == 0);
 
-	assign dout =  (read_en) ? buffer[readptr] : (FIFO_WIDTH-1)'b0;
-//	assign dout =  buffer[readptr];
+//	assign dout =  (!fifo_empty) ? buffer[readptr] : 0;
+	assign dout =  buffer[readptr];
 
 	/* Special for parameterized reset of buffer */
 	integer i;
@@ -47,7 +47,7 @@ module sync_fifo
 
 			if( reset ) begin
 				for( i = 0; i < FIFO_DEPTH; i = i + 1) begin: fifo_buffer_reset
-					buffer[i] <= FIFO_WIDTH'b0;
+					buffer[i] <= 0;
 				end
 
   				writeptr <= 0;
@@ -82,6 +82,7 @@ module sync_fifo
 				else if( !fifo_empty && !write_en && read_en ) begin
 					/* Subtract value from counter if reading, and not writing */
 					counter <= counter - 1;
+					buffer[readptr] <= 0;
 				end
 			end
 

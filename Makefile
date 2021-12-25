@@ -38,6 +38,13 @@ test_spi: src/spi.v test/dump_spi.v
 	$(VC) -o sim_build/sim.vvp -s spi -s dump -g2012 $^
 	PYTHONOPTIMIZE=${NOASSERT} MODULE=test.$@ $(VSIM) $(VSIM_MODULES)
 
+test_spi32: src/spi32.v src/spi_master.v src/sync_fifo.v src/pload_shift.v src/pread_shift.v test/dump_spi32.v
+	rm -rf sim_build
+	mkdir -p sim_build
+	$(VC) -o sim_build/sim.vvp -s spi32 -s dump -g2012 $^
+	PYTHONOPTIMIZE=${NOASSERT} MODULE=test.$@ $(VSIM) $(VSIM_MODULES)
+
+
 test_pload_shift: src/pload_shift.v test/dump_pload_shift.v
 	rm -rf sim_build
 	mkdir -p sim_build
