@@ -6,119 +6,101 @@ VSIM=vvp -lxt2
 COCOTB_MODULES=$$(cocotb-config --prefix)/cocotb/libs 
 VSIM_MODULES= -M $(COCOTB_MODULES) -m libcocotbvpi_icarus sim_build/sim.vvp
 
+# Source files 
+SRC_SYNCFIFO= src/sync_fifo.v
+SRC_PLOADSHIFT= src/pload_shift.v
+SRC_PREADSHIFT= src/pread_shift.v
+SRC_RAID= src/raid.v
+SRC_SPI32= src/spi32.v src/spi_master.v $(SRC_SYNCFIFO) $(SRC_PLOADSHIFT)
+SRC_FLASHCTL = src/flash_ctl.v $(SRC_SPI32)
+SRC_SPRAID= src/spraid.v $(SRC_RAID) $(SRC_SPI32)
+SRC= $(SRC_SPRAID)
+
+# Simulation Sources 
+#SRC_NOR_IC = sim_src/W25Q80DL.v
+SRC_NOR_IC = sim_src/MX25V1006F.v
+SRC_FRAM_IC = sim_src/FRAM_SPI.v sim_src/config.v
+SRC_FLASHTBNOR= sim_src/flashtb_nor.v $(SRC_SPI32) $(SRC_NOR_IC)
 
 # FPGA Settings
 PROJECT = fpga/spraid
-SRC = src/spraid.v src/spi_slave.v src/raid0.v src/raid1.v src/raid5.v src/flash_ctl.v src/sync_fifo.v src/raid0_write.v src/raid0_read.v src/spi.v
+SRC_FPGA = fpga/top.v  $(SRC)
 ICEBREAKER_DEVICE = up5k
 ICEBREAKER_PIN_DEF = fpga/icebreaker.pcf
 ICEBREAKER_PACKAGE = sg48
 SEED = 1
 NEXTPNR_FREQ=20
 
-# Verilog source for testing SPI Flash 
-#TEST_SRC = sim_src/W25Q80DL.v
-NOR_TEST_SRC = sim_src/MX25V1006F.v
-FRAM_TEST_SRC = sim_src/FRAM_SPI.v sim_src/config.v
+
 
 
 export COCOTB_REDUCED_LOG_FMT=1
 
-all: test_spi test_raid test_raid0 test_raid1 test_raid5 test_flash_ctl test_spraid
+all: test_fifo test_spi32 test_pload_shift test_pread_shift test_raid test_flash_ctl test_spraid
 
-test_fifo: src/sync_fifo.v test/dump_sync_fifo.v
+
+test_fifo: $(SRC_SYNCFIFO) test/dump_sync_fifo.v
 	rm -rf sim_build
 	mkdir -p sim_build
 	$(VC) -o sim_build/sim.vvp -s sync_fifo -s dump -g2012 $^
 	PYTHONOPTIMIZE=${NOASSERT} MODULE=test.$@ $(VSIM) $(VSIM_MODULES)
 
-test_spi: src/spi.v test/dump_spi.v
-	rm -rf sim_build
-	mkdir -p sim_build
-	$(VC) -o sim_build/sim.vvp -s spi -s dump -g2012 $^
-	PYTHONOPTIMIZE=${NOASSERT} MODULE=test.$@ $(VSIM) $(VSIM_MODULES)
 
-test_spi32: src/spi32.v src/spi_master.v src/sync_fifo.v src/pload_shift.v src/pread_shift.v test/dump_spi32.v
+test_spi32: $(SRC_SPI32) test/dump_spi32.v
 	rm -rf sim_build
 	mkdir -p sim_build
 	$(VC) -o sim_build/sim.vvp -s spi32 -s dump -g2012 $^
 	PYTHONOPTIMIZE=${NOASSERT} MODULE=test.$@ $(VSIM) $(VSIM_MODULES)
 
 
-test_pload_shift: src/pload_shift.v test/dump_pload_shift.v
+test_pload_shift: $(SRC_PLOADSHIFT) test/dump_pload_shift.v
 	rm -rf sim_build
 	mkdir -p sim_build
 	$(VC) -o sim_build/sim.vvp -s pload_shift -s dump -g2012 $^
 	PYTHONOPTIMIZE=${NOASSERT} MODULE=test.$@ $(VSIM) $(VSIM_MODULES)
 
-test_pread_shift: src/pread_shift.v test/dump_pread_shift.v
+
+test_pread_shift: $(SRC_PREADSHIFT) test/dump_pread_shift.v
 	rm -rf sim_build
 	mkdir -p sim_build
 	$(VC) -o sim_build/sim.vvp -s pread_shift -s dump -g2012 $^
 	PYTHONOPTIMIZE=${NOASSERT} MODULE=test.$@ $(VSIM) $(VSIM_MODULES)
 
-test_flashtb_nor: sim_src/flashtb_nor.v test/dump_flashtb_nor.v src/spi.v $(NOR_TEST_SRC) 
+
+test_flashtb_nor: $(SRC_FLASHTBNOR) $(SRC_NOR_IC) test/dump_flashtb_nor.v
 	rm -rf sim_build
 	mkdir -p sim_build
 	$(VC) -o sim_build/sim.vvp -s flashtb_nor -s dump -g2012 $^
 	PYTHONOPTIMIZE=${NOASSERT} MODULE=test.$@ $(VSIM) $(VSIM_MODULES)
 
-test_flashtb_fram: sim_src/flashtb_fram.v test/dump_flashtb_fram.v src/spi.v $(FRAM_TEST_SRC) 
+
+test_flashtb_fram: $(SRC_FLASHTBFRAM) $(SRC_FRAM_IC) test/dump_flashtb_fram.v 
 	rm -rf sim_build
 	mkdir -p sim_build
 	$(VC) -o sim_build/sim.vvp -s flashtb_fram -s dump -g2012 $^
 	PYTHONOPTIMIZE=${NOASSERT} MODULE=test.$@ $(VSIM) $(VSIM_MODULES)
 
 
-test_raid: src/raid.v test/dump_raid.v 
+test_raid: $(SRC_RAID) test/dump_raid.v 
 	rm -rf sim_build
 	mkdir -p sim_build
 	$(VC) -o sim_build/sim.vvp -s raid -s dump -g2012 $^
 	PYTHONOPTIMIZE=${NOASSERT} MODULE=test.$@ $(VSIM) $(VSIM_MODULES)
 
-test_raid0: src/raid0.v src/raid0_write.v src/raid0_read.v test/dump_raid0.v test/dump_raid0_write.v test/dump_raid0_read.v
-	rm -rf sim_build
-	mkdir -p sim_build
-	$(VC) -o sim_build/sim.vvp -s raid0 -s dump -g2012 $^
-	PYTHONOPTIMIZE=${NOASSERT} MODULE=test.$@ $(VSIM) $(VSIM_MODULES)
 
-test_raid0_write: src/raid0_write.v test/dump_raid0_write.v
+test_flash_ctl: $(SRC_FLASHCTL) test/dump_flash_ctl.v 
 	rm -rf sim_build
 	mkdir -p sim_build
-	$(VC) -o sim_build/sim.vvp -s raid0_write -s dump -g2012 $^
-	PYTHONOPTIMIZE=${NOASSERT} MODULE=test.$@ $(VSIM) $(VSIM_MODULES)
-
-test_raid0_read: src/raid0_read.v test/dump_raid0_read.v
-	rm -rf sim_build
-	mkdir -p sim_build
-	$(VC) -o sim_build/sim.vvp -s raid0_read -s dump -g2012 $^
+	$(VC) -o sim_build/sim.vvp -s flash_ctl -s dump -g2012 $^
 	PYTHONOPTIMIZE=${NOASSERT} MODULE=test.$@ $(VSIM) $(VSIM_MODULES)
 
 
-test_raid1: src/raid1.v
-	rm -rf sim_build
-	mkdir -p sim_build
-	$(VC) -o sim_build/sim.vvp -s raid1 -s dump -g2012 $^ test/dump_raid1.v
-	PYTHONOPTIMIZE=${NOASSERT} MODULE=test.$@ $(VSIM) $(VSIM_MODULES)
-
-test_raid5: src/raid5.v
-	rm -rf sim_build
-	mkdir -p sim_build
-	$(VC) -o sim_build/sim.vvp -s raid5 -s dump -g2012 $^ test/dump_raid5.v
-	PYTHONOPTIMIZE=${NOASSERT} MODULE=test.$@ $(VSIM) $(VSIM_MODULES)
-
-test_flash_ctl: src/spi_slave.v src/flash_ctl.v $(TEST_SRC)
-	rm -rf sim_build
-	mkdir -p sim_build
-	$(VC) -o sim_build/sim.vvp -s flash_ctl -s dump -g2012 $^ test/dump_flash_ctl.v
-	PYTHONOPTIMIZE=${NOASSERT} MODULE=test.$@ $(VSIM) $(VSIM_MODULES)
-
-
-test_spraid: $(SRC) $(TEST_SRC)
+test_spraid: $(SRC) 
 	rm -rf sim_build
 	mkdir -p sim_build
 	$(VC) -o sim_build/sim.vvp -s spraid -s dump -g2012 $^ test/dump_spraid.v
 	PYTHONOPTIMIZE=${NOASSERT} MODULE=test.$@ $(VSIM) $(VSIM_MODULES)
+
 
 formal_all: formal_sync_fifo
 
@@ -135,11 +117,15 @@ show_%: %.vcd gtkwave/%.gtkw
 show_synth_%: src/%.v
 	yosys -p "read_verilog $<; proc; opt; show -colors 2 -width -signed"
 
-%.json: $(SRC)
-	yosys -l fpga/yosys.log -p 'synth_ice40 -top spraid -json $(PROJECT).json' $^
 
-%.asc: %.json $(ICEBREAKER_PIN_DEF)
-	nextpnr-ice40 -l fpga/nextpnr.log --seed $(SEED) --freq $(NEXTPNR_FREQ) --package $(ICEBREAKER_PACKAGE) --$(ICEBREAKER_DEVICE) --asc --pcf $(ICEBREAKER_PIN_DEF) --json $<
+spi32.json: $(SRC_SPI32)
+	yosys -l fpga/yosys.log -p 'synth_ice40 -top spi32 -json $(PROJECT).json' $^
+
+#%.json: $(SRC)
+#	yosys -l fpga/yosys.log -p 'synth_ice40 -top spraid -json $(PROJECT).json' $^
+
+%.asc: fpga/%.json $(ICEBREAKER_PIN_DEF)
+	nextpnr-ice40 -l fpga/nextpnr.log --seed $(SEED) --freq $(NEXTPNR_FREQ) --package $(ICEBREAKER_PACKAGE) --$(ICEBREAKER_DEVICE) --asc $@ --pcf $(ICEBREAKER_PIN_DEF) --json $<
 
 %.bin: %.asc
 	icepack $< $@
@@ -151,7 +137,7 @@ lint:
 	verible-verilog-lint $(SRC) --rules_config verible.rules
 
 clean:
-	rm -rf *vcd sim_build fpga/*log fpga/*bin test/__pycache__
+	rm -rf *vcd sim_build fpga/*log fpga/*bin test/__pycache__ fpga/*.json results.xml xt2
 
 .PHONY: clean lint
 

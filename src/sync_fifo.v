@@ -15,12 +15,15 @@ module sync_fifo
 
 		output [FIFO_WIDTH-1:0]			dout,
 		output  						fifo_full,
-		output 							fifo_empty
+		output 							fifo_empty,
+		output [$clog2(FIFO_DEPTH)-1:0]	count_out
 		
 
 
 	);
 
+	/* Have the current amount of bytes output to control above */
+	assign count_out = counter;
 
 	/* Words in FIFO */
 	reg [$clog2(FIFO_DEPTH)-1:0] counter;

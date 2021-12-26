@@ -1,0 +1,72 @@
+[*]
+[*] GTKWave Analyzer v3.3.109 (w)1999-2020 BSI
+[*] Sun Dec 26 17:57:31 2021
+[*]
+[dumpfile] "/home/bit0fun/Documents/workspace/ASIC/zero-to-asic-course/project/flash_ctl.vcd"
+[dumpfile_mtime] "Sun Dec 26 17:55:03 2021"
+[dumpfile_size] 6191
+[savefile] "/home/bit0fun/Documents/workspace/ASIC/zero-to-asic-course/project/gtkwave/flash_ctl.gtkw"
+[timestart] 73100
+[size] 1920 1055
+[pos] -1 -1
+*-14.098701 99320 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] flash_ctl.
+[treeopen] flash_ctl.spi0.
+[sst_width] 223
+[signals_width] 282
+[sst_expanded] 1
+[sst_vpaned_height] 306
+@200
+-Host
+@28
+flash_ctl.reset
+flash_ctl.clk
+flash_ctl.read
+flash_ctl.write
+@22
+flash_ctl.din[7:0]
+flash_ctl.dout[7:0]
+@200
+-
+-Flash CTL
+@28
+flash_ctl.flash_state[2:0]
+@22
+flash_ctl.flash_addr[10:0]
+flash_ctl.cmd[31:0]
+@28
+flash_ctl.cmd_sz[2:0]
+@200
+-Flash Commands
+@22
+flash_ctl.read_cmd[31:0]
+flash_ctl.write_cmd[31:0]
+flash_ctl.write_cmd_save[31:0]
+@200
+-
+-SPI CTL
+@29
+flash_ctl.spi0.busy
+@22
+flash_ctl.spi0.din[31:0]
+flash_ctl.spi0.dout[31:0]
+@28
+flash_ctl.spi0.mspi.r_TX_DV
+flash_ctl.spi0.write_fifo_spi_en
+@22
+flash_ctl.spi0.mspi.r_TX_Byte[7:0]
+@28
+flash_ctl.spi0.nbytes[1:0]
+flash_ctl.spi0.spi_tx_ready
+flash_ctl.spi0.fifo_early_reset
+@22
+flash_ctl.spi0.spi_state[3:0]
+@200
+-SPI
+@28
+flash_ctl.spi_cs
+flash_ctl.spi_clk
+flash_ctl.spi_miso
+flash_ctl.spi_mosi
+[pattern_trace] 1
+[pattern_trace] 0

@@ -12,7 +12,7 @@ module spi32 (
 		output [31:0]		dout,
 
 		/* Get size for command */
-		input [2:0]			nbytes,
+		input [1:0]			nbytes,
 
 		/* Busy signal for higher level control */
 //		output reg			busy,
@@ -51,7 +51,7 @@ module spi32 (
 
 	/* Write bit conversion */
 	reg  [2:0] bytes2write;
-	wire [2:0] write_fifo_nbyte;
+	wire [1:0] write_fifo_nbyte;
 	wire       write_shift_busy;
 	wire [7:0] write_shift_out;
 	wire [7:0] write_fifo_out;
@@ -64,6 +64,8 @@ module spi32 (
 	wire[7:0]  spi_out;
 
 	assign dout = {24'b0, spi_out};
+
+	reg fifo_early_reset;
 	
 
 	/* 32 to 8 bit conversion */
@@ -82,7 +84,7 @@ module spi32 (
 		.FIFO_DEPTH(4)
 	)write_fifo(
 		.count_out(write_fifo_nbyte),
-		.reset(reset),
+		.reset(reset | fifo_early_reset ),
 		.clk(clk),
 		.read_en(write_fifo_spi_en),
 		.write_en(write_shift_busy ),
@@ -136,6 +138,7 @@ module spi32 (
 
 	always @(posedge clk or posedge reset) begin
 		if( reset ) begin
+			fifo_early_reset <= 0;
 			bytes2write <= 0;
 			read_flag <= 0;
 			spi_state <= `SPI_IDLE;
@@ -144,131 +147,136 @@ module spi32 (
 			write_fifo_spi_en <= 0;
 			tmp_busy <= 0;
 		end
+		else begin
 
-		case ( spi_state )
-			`SPI_IDLE: begin
-				
-				/* Ensure no more data is read out */
-				write_fifo_spi_en <= 0;
-				cs <= 1'b1;
-				tmp_busy <= 1'b0;
-
-				/* Writing, should have loaded data into shift register */
-				if( write && !read ) begin
-					tmp_busy <= 1'b1;
-					spi_state = `SPI_WRITE_FIFO;
-					bytes2write <= nbytes;
+			case ( spi_state )
+				`SPI_IDLE: begin
+					
+					/* Ensure no more data is read out */
+					write_fifo_spi_en <= 0;
+					fifo_early_reset <= 1'b0;
+					cs <= 1'b1;
+					tmp_busy <= 1'b0;
+	
+					/* Writing, should have loaded data into shift register */
+					if( write && !read ) begin
+						tmp_busy <= 1'b1;
+						spi_state = `SPI_WRITE_FIFO;
+						bytes2write <= nbytes;
+					end
+					else if( !write && read ) begin
+						/* Implement reads later */
+						tmp_busy <= 1'b1;
+						spi_state = `SPI_WRITE_FIFO;
+						/* Used to change states later */
+						read_flag <= 1'b1;
+					end
+	
+	
 				end
-				else if( !write && read ) begin
-					/* Implement reads later */
-					tmp_busy <= 1'b1;
-					spi_state = `SPI_WRITE_FIFO;
-					/* Used to change states later */
-					read_flag <= 1'b1;
-				end
-
-
-			end
-
-			`SPI_WRITE_FIFO: begin
-				if( (bytes2write == write_fifo_nbyte) && !write_fifo_full ) begin
-					cs <= 1'b0;
-					if(bytes2write == write_fifo_nbyte)begin
+	
+				`SPI_WRITE_FIFO: begin
+					if( (bytes2write == write_fifo_nbyte) && !write_fifo_full ) begin
+						cs <= 1'b0;
+						if(bytes2write == write_fifo_nbyte)begin
+							write_fifo_spi_en <= 1;
+							write_state <= `SPI_WRITE_LAST_BYTE;
+							spi_state <= `SPI_WRITE_OUT;
+						end
+						else begin
+	
+							write_fifo_spi_en <= 1;
+							spi_state <= `SPI_WRITE_OUT;
+						end
+					end
+					if( write_fifo_full ) begin
 						write_fifo_spi_en <= 1;
-						write_state <= `SPI_WRITE_LAST_BYTE;
+						cs <= 1'b0;
 						spi_state <= `SPI_WRITE_OUT;
 					end
 					else begin
-
-						write_fifo_spi_en <= 1;
-						spi_state <= `SPI_WRITE_OUT;
-					end
-				end
-				if( write_fifo_full ) begin
-					write_fifo_spi_en <= 1;
-					cs <= 1'b0;
-					spi_state <= `SPI_WRITE_OUT;
-				end
-				else begin
-					write_fifo_spi_en <= 0;
-				end
-
-			end
-
-			`SPI_WRITE_OUT: begin
-				case( write_state )
-					`SPI_WRITE_START: begin
-						/* Wait one more cycle in the beginning before reading
-						* out data */
-					   	write_fifo_spi_en <= 0;
-					   	write_state <= `SPI_WAIT_READY;
-					end
-					`SPI_WAIT_READY: begin
 						write_fifo_spi_en <= 0;
-						if(bytes2write == write_fifo_nbyte)begin
-							write_state <= `SPI_WRITE_LAST_BYTE;
-						end
-						else if( spi_tx_ready  && !write_fifo_empty ) begin
-							write_state <= `SPI_ENABLE_WRITE;
-						end
-						else if (spi_tx_ready && write_fifo_empty ) begin
-							write_state <= `SPI_WRITE_LAST_BYTE;
-						end
 					end
-
-					`SPI_ENABLE_WRITE: begin
-						/* write has been enabled, reset pulse to wait for next
-						* time it is ready */
-//						if( !write_fifo_empty ) begin
-						if( spi_tx_ready ) begin
-					   		write_fifo_spi_en <= 1;
-					   		write_state <= `SPI_WAIT_READY;
-						end
-//						else begin
-//							write_fifo_spi_en <= 1;
-//							write_state <= `SPI_WRITE_LAST_BYTE;
-					//	end
-					end
-
-					`SPI_WRITE_LAST_BYTE: begin
-						if( spi_tx_ready && !read_flag ) begin
-							write_fifo_spi_en <= 1;
-						end
-						else if( !read_flag) begin
-							write_fifo_spi_en <= 0;
-					  		write_state <= `SPI_WRITE_FINISH;
-						end
-						else if( read_flag ) begin
-							/* Actually reading, so record data */
-							write_fifo_spi_en <= 0;
-					  		write_state <= `SPI_WRITE_START;
-							spi_state <= `SPI_READ_OUT;
-						end
-					end
-
-					`SPI_WRITE_FINISH: begin
-						if( spi_tx_ready ) begin
-					   		write_state <= `SPI_WRITE_START;
-							spi_state <= `SPI_IDLE;
-						end
-					end
-
-				endcase 
-				if( !spi_tx_ready ) begin
-					write_fifo_spi_en <= 0;
+	
 				end
-
-			end
-
-			`SPI_READ_OUT: begin
-				if( spi_rx_ready ) begin
-					spi_state <= `SPI_IDLE;
+	
+				`SPI_WRITE_OUT: begin
+					case( write_state )
+						`SPI_WRITE_START: begin
+							/* Wait one more cycle in the beginning before reading
+							* out data */
+						   	write_fifo_spi_en <= 0;
+						   	write_state <= `SPI_WAIT_READY;
+						end
+						`SPI_WAIT_READY: begin
+							write_fifo_spi_en <= 0;
+							if(bytes2write == write_fifo_nbyte)begin
+								write_state <= `SPI_WRITE_LAST_BYTE;
+							end
+							else if( spi_tx_ready  && !write_fifo_empty ) begin
+								write_state <= `SPI_ENABLE_WRITE;
+							end
+							else if (spi_tx_ready && write_fifo_empty ) begin
+								write_state <= `SPI_WRITE_LAST_BYTE;
+							end
+						end
+	
+						`SPI_ENABLE_WRITE: begin
+							/* write has been enabled, reset pulse to wait for next
+							* time it is ready */
+	//						if( !write_fifo_empty ) begin
+							if( spi_tx_ready ) begin
+						   		write_fifo_spi_en <= 1;
+						   		write_state <= `SPI_WAIT_READY;
+							end
+	//						else begin
+	//							write_fifo_spi_en <= 1;
+	//							write_state <= `SPI_WRITE_LAST_BYTE;
+						//	end
+						end
+	
+						`SPI_WRITE_LAST_BYTE: begin
+							if( !write_fifo_spi_en && spi_tx_ready && !read_flag ) begin
+								write_fifo_spi_en <= 1;
+							end
+							else if( !read_flag) begin
+								write_fifo_spi_en <= 0;
+						  		write_state <= `SPI_WRITE_FINISH;
+							end
+							else if( read_flag ) begin
+								/* Actually reading, so record data */
+								write_fifo_spi_en <= 0;
+						  		write_state <= `SPI_WRITE_START;
+								spi_state <= `SPI_READ_OUT;
+							end
+						end
+	
+						`SPI_WRITE_FINISH: begin
+							write_fifo_spi_en <= 0;
+							if( spi_tx_ready ) begin
+						   		write_state <= `SPI_WRITE_START;
+								spi_state <= `SPI_IDLE;
+								fifo_early_reset <= 1'b1;
+							end
+						end
+	
+					endcase 
+					if( !spi_tx_ready ) begin
+						write_fifo_spi_en <= 0;
+					end
+	
 				end
-
-			end
-
-
-		endcase 
+	
+				`SPI_READ_OUT: begin
+					if( spi_rx_ready ) begin
+						spi_state <= `SPI_IDLE;
+					end
+	
+				end
+	
+	
+			endcase 
+		end
 
 	end
 
