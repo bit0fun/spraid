@@ -26,6 +26,7 @@ async def test_spi32(dut):
     dut.sdi.value = 0
     dut.read.value = 0
     dut.write.value = 0
+    dut.nbytes.value = 0
 
     # Reset device before continuing
     await reset(dut)
@@ -44,12 +45,14 @@ async def test_spi32(dut):
     dut.din.value = data
     dut.write.value = 1
     dut.read.value = 0
+    dut.nbytes.value = 3 # number of bytes minus one
 
     await ClockCycles(dut.clk, 2)
 
     dut.din.value = 0
     dut.write.value = 0
     dut.read.value = 0
+    dut.nbytes.value = 0
 
     # Should now be in SPI_WRITE_FIFO state 
     assert(dut.spi_state.value == 1)
@@ -97,6 +100,72 @@ async def test_spi32(dut):
 
     await ClockCycles( dut.clk, 10 )
 
+    # Write test
+    dut._log.info("\n\nSPI32 Write single byte test")
+
+    # Check initial values are proper 
+    assert( dut.cs.value == 1 )
+#    assert( dut.sdo.value == 0 )
+    assert( dut.busy.value == 0 )
+#    assert( dut.dout.value == 0 )
+    assert( dut.spi_state.value == 0 ) 
+
+    # Write data to write shift register 
+#    dut.din.value = 0x00000055
+    dut.din.value = 0x55555555
+    dut.write.value = 1
+    dut.read.value = 0
+    dut.nbytes.value = 1 # number of bytes minus one
+
+    await ClockCycles(dut.clk, 2)
+
+    dut.din.value = 0
+    dut.write.value = 0
+    dut.read.value = 0
+    dut.nbytes.value = 0
+
+    # Should now be in SPI_WRITE_FIFO state 
+    assert(dut.spi_state.value == 1)
+    assert(dut.busy.value == 1)
+    
+    # Wait until fifo is no longer empty, data should be shifted in
+#    dut._log.info("Waiting for fifo to be empty")
+#    while( dut.write_fifo_empty.value ):
+#        await ClockCycles(dut.clk, 1)
+
+    # Wait for all data to be shifted in to the fifo
+    dut._log.info("Waiting for fifo to be full")
+    while( (dut.cs.value == 1) ):
+        dut._log.info("fifo:[0]=%02x [1]=%02x [2]=%02x [3]=%02x" %(dut.write_fifo.buffer[0].value, dut.write_fifo.buffer[1].value, dut.write_fifo.buffer[2].value, dut.write_fifo.buffer[3].value))
+        assert( dut.spi_state.value == 1 )
+        await ClockCycles(dut.clk, 1)
+
+    # Write fifo is full, should transition to writing out data next
+#    assert( dut.spi_state.value == 1)
+    await ClockCycles(dut.clk, 1)
+
+    #assert( dut.spi_state.value == 2 )
+
+#    assert( dut.write_fifo_spi_en.value == 1 )
+
+
+    # Wait until byte is written on spi 
+    while( dut.spi_tx_ready.value == 0 ):
+        await ClockCycles(dut.clk, 1)
+
+    # need a couple more clock cycles to get to cs high again 
+    while( dut.cs.value == 0 ):
+        await ClockCycles( dut.clk, 1 )
+
+    assert( dut.spi_state.value == 0)
+    assert( dut.cs.value == 1 )
+
+
+    assert( dut.write_fifo_spi_en.value == 0 )
+
+    await ClockCycles( dut.clk, 10 )
+
+
     # Read test
     dut._log.info("SPI32 Read test")
 
@@ -111,12 +180,14 @@ async def test_spi32(dut):
     dut.din.value = read_cmd_test
     dut.write.value = 0
     dut.read.value = 1
+    dut.nbytes.value = 3 # number of bytes minus one
 
     await ClockCycles(dut.clk, 2)
 
     dut.din.value = 0
     dut.write.value = 0
     dut.read.value = 0
+    dut.nbytes.value = 3 # number of bytes minus one
 
     # set din value just to make it easier for later 
     dut.sdi.value = 1
@@ -133,6 +204,7 @@ async def test_spi32(dut):
     # Wait for all data to be shifted in to the fifo
     dut._log.info("Waiting for fifo to be full")
     while( dut.write_fifo_full.value == 0 ):
+        assert( dut.write_fifo_nbyte.value != 3 )
         assert( dut.spi_state.value == 1 )
         await ClockCycles(dut.clk, 1)
 

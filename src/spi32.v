@@ -12,9 +12,11 @@ module spi32 (
 		output [31:0]		dout,
 
 		/* Get size for command */
+		input [2:0]			nbytes,
 
 		/* Busy signal for higher level control */
-		output reg			busy,
+//		output reg			busy,
+		output				busy,
 
 		/* SPI interface */
 		input				sdi,
@@ -48,6 +50,8 @@ module spi32 (
 	assign tx_start = read | write;
 
 	/* Write bit conversion */
+	reg  [2:0] bytes2write;
+	wire [2:0] write_fifo_nbyte;
 	wire       write_shift_busy;
 	wire [7:0] write_shift_out;
 	wire [7:0] write_fifo_out;
@@ -77,10 +81,11 @@ module spi32 (
 		.FIFO_WIDTH(8),
 		.FIFO_DEPTH(4)
 	)write_fifo(
+		.count_out(write_fifo_nbyte),
 		.reset(reset),
 		.clk(clk),
 		.read_en(write_fifo_spi_en),
-		.write_en(write_shift_busy),
+		.write_en(write_shift_busy ),
 		.din(write_shift_out),
 		.dout(write_fifo_out),
 		.fifo_full(write_fifo_full),
@@ -104,7 +109,8 @@ module spi32 (
 //	);
 
 
-
+	reg tmp_busy;
+	assign busy = ~cs | tmp_busy | ~spi_tx_ready; 
 
 
 	/* Actual SPI controller from NANDLAND (thanks) */
@@ -130,12 +136,13 @@ module spi32 (
 
 	always @(posedge clk or posedge reset) begin
 		if( reset ) begin
+			bytes2write <= 0;
 			read_flag <= 0;
 			spi_state <= `SPI_IDLE;
 			write_state <= `SPI_WRITE_START;
 			cs <= 1;
 			write_fifo_spi_en <= 0;
-			busy <= 0;
+			tmp_busy <= 0;
 		end
 
 		case ( spi_state )
@@ -144,16 +151,17 @@ module spi32 (
 				/* Ensure no more data is read out */
 				write_fifo_spi_en <= 0;
 				cs <= 1'b1;
-				busy <= 1'b0;
+				tmp_busy <= 1'b0;
 
 				/* Writing, should have loaded data into shift register */
 				if( write && !read ) begin
-					busy <= 1'b1;
+					tmp_busy <= 1'b1;
 					spi_state = `SPI_WRITE_FIFO;
+					bytes2write <= nbytes;
 				end
 				else if( !write && read ) begin
 					/* Implement reads later */
-					busy <= 1'b1;
+					tmp_busy <= 1'b1;
 					spi_state = `SPI_WRITE_FIFO;
 					/* Used to change states later */
 					read_flag <= 1'b1;
@@ -163,6 +171,19 @@ module spi32 (
 			end
 
 			`SPI_WRITE_FIFO: begin
+				if( (bytes2write == write_fifo_nbyte) && !write_fifo_full ) begin
+					cs <= 1'b0;
+					if(bytes2write == write_fifo_nbyte)begin
+						write_fifo_spi_en <= 1;
+						write_state <= `SPI_WRITE_LAST_BYTE;
+						spi_state <= `SPI_WRITE_OUT;
+					end
+					else begin
+
+						write_fifo_spi_en <= 1;
+						spi_state <= `SPI_WRITE_OUT;
+					end
+				end
 				if( write_fifo_full ) begin
 					write_fifo_spi_en <= 1;
 					cs <= 1'b0;
@@ -184,7 +205,10 @@ module spi32 (
 					end
 					`SPI_WAIT_READY: begin
 						write_fifo_spi_en <= 0;
-						if( spi_tx_ready  && !write_fifo_empty ) begin
+						if(bytes2write == write_fifo_nbyte)begin
+							write_state <= `SPI_WRITE_LAST_BYTE;
+						end
+						else if( spi_tx_ready  && !write_fifo_empty ) begin
 							write_state <= `SPI_ENABLE_WRITE;
 						end
 						else if (spi_tx_ready && write_fifo_empty ) begin
@@ -207,7 +231,7 @@ module spi32 (
 					end
 
 					`SPI_WRITE_LAST_BYTE: begin
-						if( spi_tx_ready ) begin
+						if( spi_tx_ready && !read_flag ) begin
 							write_fifo_spi_en <= 1;
 						end
 						else if( !read_flag) begin
