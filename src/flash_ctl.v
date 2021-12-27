@@ -65,20 +65,20 @@ module flash_ctl #(
 	assign read_cmd = {`CMD_READ, {(16-FLASH_ADDR_SZ){1'b0}}, flash_addr, 8'b0 };
 
 	/* Command save, since writes require enable first */
-	reg [31:0] write_cmd_save;
+	reg [31:0] cmd_save;
 
 	/* Command register to use to write to spi */
 	reg [31:0] cmd;
 	/* Size for command */
-	reg [2:0] cmd_sz;
+	reg [1:0] cmd_sz;
 	
 	/* Flash cycle state machine */
 	`define IDLE			0
 	`define WRITE_ENABLE	1
 	`define WRITE_BUBBLE	2	/* Pause an additional cycle */
 	`define WRITE			3
-	`define READ			4
 	`define READ_BUBBLE		5
+	`define READ			4
 	reg [2:0] flash_state;
 
 	spi32 spi0(
@@ -104,7 +104,7 @@ module flash_ctl #(
 			spi_write <= 0;
 			cmd <= 0;
 			cmd_sz <= 0;
-			write_cmd_save <= 0;
+			cmd_save <= 0;
 			flash_state <= `IDLE;
 		end
 
@@ -115,7 +115,7 @@ module flash_ctl #(
 					if( !busy && write && !read ) begin
 						/* Writing, need to enable writing first, but store
 						* incoming data for later */
-						write_cmd_save <= write_cmd;
+						cmd_save <= write_cmd;
 						flash_state <= `WRITE_ENABLE;
 						cmd <=  {`CMD_WEN, 24'b0};
 						cmd_sz <= `CMD_WEN_SZ;
@@ -129,9 +129,10 @@ module flash_ctl #(
 					end
 					else if( !busy && !write && read ) begin
 						/* Reading, so no need to enable writes */
-						cmd <= read_cmd;
+//						cmd <= read_cmd;
+						cmd_save <= read_cmd;
 						cmd_sz <= `CMD_READ_SZ;
-						flash_state <= `READ;
+						flash_state <= `READ_BUBBLE;
 
 						spi_write <= 1'b0;
 						spi_read <= 1'b1;
@@ -169,7 +170,7 @@ module flash_ctl #(
 						spi_write <= 1'b1;
 						spi_read <= 1'b0;
 						flash_state <= `WRITE;
-						cmd <= write_cmd_save;
+						cmd <= cmd_save;
 						cmd_sz <= `CMD_WRITE_SZ;
 					end
 
@@ -187,12 +188,24 @@ module flash_ctl #(
 
 				end
 
+				`READ_BUBBLE: begin
+					/* Needed one more cycle to get things ready */
+					if( !spi_busy ) begin
+						spi_write <= 1'b0;
+						spi_read <= 1'b1;
+						flash_state <= `READ;
+						cmd <= cmd_save;
+						cmd_sz <= `CMD_READ_SZ;
+					end
+
+				end
+
 				`READ: begin
 					spi_write <= 1'b0;
 					spi_read <= 1'b0;
 					if( !spi_busy )begin
 						/* SPI is no longer busy, write has finished */
-						cmd <= 0;
+						cmd <= cmd_save;
 						cmd_sz <= 0;
 						flash_state <= `IDLE;
 					end

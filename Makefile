@@ -24,6 +24,9 @@ SRC_FLASHTBNOR= sim_src/flashtb_nor.v $(SRC_SPI32) $(SRC_NOR_IC)
 
 # FPGA Settings
 PROJECT = fpga/spraid
+
+SRC_FPGA_FLASH_TEST	= fpga/flash_test.v $(SRC_FLASHCTL)
+
 SRC_FPGA = fpga/top.v  $(SRC)
 ICEBREAKER_DEVICE = up5k
 ICEBREAKER_PIN_DEF = fpga/icebreaker.pcf
@@ -115,29 +118,33 @@ show_%: %.vcd gtkwave/%.gtkw
 
 # FPGA build
 show_synth_%: src/%.v
-	yosys -p "read_verilog $<; proc; opt; show -colors 2 -width -signed"
+	yosys -p "read_verilog $<; check; proc; opt; show -colors 2 -width -signed"
 
+flash_test: flash_test.bin
 
-spi32.json: $(SRC_SPI32)
-	yosys -l fpga/yosys.log -p 'synth_ice40 -top spi32 -json $(PROJECT).json' $^
+fpga/flash_test.json: $(SRC_FPGA_FLASH_TEST)
+	yosys -l fpga/yosys.log -p 'check; proc; opt; synth_ice40 -top flash_test -json fpga/flash_test.json' $^
 
-#%.json: $(SRC)
-#	yosys -l fpga/yosys.log -p 'synth_ice40 -top spraid -json $(PROJECT).json' $^
+#fpga/%.json: $(SRC)
+#	yosys -l fpga/yosys.log -p 'synth_ice40 -top $(basename $(notdir $@)) -json $@' $^
 
-%.asc: fpga/%.json $(ICEBREAKER_PIN_DEF)
+fpga/%.asc: fpga/%.json $(ICEBREAKER_PIN_DEF)
 	nextpnr-ice40 -l fpga/nextpnr.log --seed $(SEED) --freq $(NEXTPNR_FREQ) --package $(ICEBREAKER_PACKAGE) --$(ICEBREAKER_DEVICE) --asc $@ --pcf $(ICEBREAKER_PIN_DEF) --json $<
 
-%.bin: %.asc
+fpga/%_timing.log: fpga/%.asc fpga/icebreaker_timing.pcf
+	icetime -t -d up5k -p fpga/icebreaker_timing.pcf -c $(NEXTPNR_FREQ) -r $@  $<
+
+%.bin: fpga/%.asc
 	icepack $< $@
 
-prog: $(PROJECT).bin
+prog: $(PROJECT).bin fpga/%_timing.log
 	iceprog $<
 
 lint:
 	verible-verilog-lint $(SRC) --rules_config verible.rules
 
 clean:
-	rm -rf *vcd sim_build fpga/*log fpga/*bin test/__pycache__ fpga/*.json results.xml xt2
+	rm -rf *vcd sim_build fpga/*log fpga/*bin test/__pycache__ fpga/*.json results.xml xt2 *.bin
 
 .PHONY: clean lint
 

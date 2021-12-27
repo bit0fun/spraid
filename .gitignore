@@ -10,3 +10,6 @@ formal/raid5
 test/__pycache__
 ac_check.err
 xt2
+*.bin
+fpga/*.log
+fpga/*.json
