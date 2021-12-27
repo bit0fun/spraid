@@ -13,7 +13,7 @@ SRC_PREADSHIFT= src/pread_shift.v
 SRC_RAID= src/raid.v
 SRC_SPI32= src/spi32.v src/spi_master.v $(SRC_SYNCFIFO) $(SRC_PLOADSHIFT)
 SRC_FLASHCTL = src/flash_ctl.v $(SRC_SPI32)
-SRC_SPRAID= src/spraid.v $(SRC_RAID) $(SRC_SPI32)
+SRC_SPRAID= src/spraid.v $(SRC_RAID) $(SRC_FLASHCTL)
 SRC= $(SRC_SPRAID)
 
 # Simulation Sources 

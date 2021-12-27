@@ -1,0 +1,110 @@
+[*]
+[*] GTKWave Analyzer v3.3.109 (w)1999-2020 BSI
+[*] Mon Dec 27 03:55:54 2021
+[*]
+[dumpfile] "/home/bit0fun/Documents/workspace/ASIC/zero-to-asic-course/project/spraid.vcd"
+[dumpfile_mtime] "Mon Dec 27 03:55:33 2021"
+[dumpfile_size] 20456
+[savefile] "/home/bit0fun/Documents/workspace/ASIC/zero-to-asic-course/project/gtkwave/spraid.gtkw"
+[timestart] 0
+[size] 1920 1055
+[pos] -1 -1
+*-16.405788 140000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] spraid.
+[treeopen] spraid.drive0.
+[sst_width] 283
+[signals_width] 300
+[sst_expanded] 1
+[sst_vpaned_height] 306
+@28
+spraid.clk
+@200
+-Host interface
+@28
+spraid.read
+spraid.write
+@22
+spraid.din[31:0]
+spraid.dout[31:0]
+spraid.addr[31:0]
+@28
+spraid.err
+spraid.parity
+@22
+spraid.raid_type[3:0]
+@29
+spraid.busy
+@200
+-
+-RAID
+@22
+spraid.raid_module.r_raid0[31:0]
+spraid.raid_module.r_raid1[31:0]
+spraid.raid_module.r_raid5[31:0]
+spraid.raid_module.w_drive_data0[31:0]
+spraid.raid_module.w_drive_data1[31:0]
+spraid.raid_module.w_drive_data2[31:0]
+spraid.raid_module.w_drive_data3[31:0]
+spraid.raid_module.addr[31:0]
+spraid.raid_module.op[3:0]
+@200
+-
+-SPI Devs
+@28
+spraid.spi_read
+spraid.spi_write
+@200
+-SPI0
+@22
+spraid.spi0_din[31:0]
+spraid.spi0_dout[7:0]
+@28
+spraid.spi0_busy
+spraid.spi0_clk
+spraid.spi0_cs
+spraid.spi0_miso
+spraid.spi0_mosi
+@22
+spraid.drive0.cmd[31:0]
+@28
+spraid.drive0.flash_state[2:0]
+@22
+spraid.drive0.cmd_save[31:0]
+@200
+-SPI1
+@22
+spraid.spi1_din[31:0]
+spraid.spi1_dout[7:0]
+@28
+spraid.spi1_busy
+spraid.spi1_clk
+spraid.spi1_cs
+spraid.spi1_miso
+spraid.spi1_mosi
+@22
+spraid.drive1.cmd[31:0]
+@200
+-SPI2
+@22
+spraid.spi2_din[31:0]
+spraid.spi2_dout[7:0]
+@28
+spraid.spi2_busy
+spraid.spi2_clk
+spraid.spi2_cs
+spraid.spi2_miso
+spraid.spi2_mosi
+@200
+-SPI3
+@28
+spraid.spi3_busy
+@22
+spraid.spi3_din[31:0]
+spraid.spi3_dout[7:0]
+@28
+spraid.spi3_clk
+spraid.spi3_cs
+spraid.spi3_miso
+spraid.spi3_mosi
+[pattern_trace] 1
+[pattern_trace] 0

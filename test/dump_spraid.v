@@ -1,4 +1,4 @@
-module(dump);
+module dump();
 	initial begin
 		$dumpfile("spraid.vcd");
 		$dumpvars(0, spraid);

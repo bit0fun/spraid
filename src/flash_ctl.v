@@ -71,6 +71,10 @@ module flash_ctl #(
 	reg [31:0] cmd;
 	/* Size for command */
 	reg [1:0] cmd_sz;
+
+	/* If previously sent write enable, should still show that we are busy
+	* otherwise everything else moves too fast */
+	reg prev_wren;
 	
 	/* Flash cycle state machine */
 	`define IDLE			0
@@ -99,6 +103,7 @@ module flash_ctl #(
 
 	always @(posedge clk or posedge reset) begin
 		if( reset ) begin
+			prev_wren <= 0;
 			busy <= 0;
 			spi_read <= 0;
 			spi_write <= 0;
@@ -144,7 +149,13 @@ module flash_ctl #(
 						/* No longer busy, default. Also forces additional
 						* cycle so can't read and write back to back, need to
 						* wait additional cycle */
-						busy <= 1'b0;
+						flash_state <= `IDLE;
+						if( spi_busy == 1 ) begin
+							busy <= 1'b1;
+						end
+						else begin
+							busy <= 1'b0;						
+						end
 					end
 
 				end
@@ -166,6 +177,7 @@ module flash_ctl #(
 
 				`WRITE_BUBBLE: begin
 					/* Needed one more cycle to get things ready */
+					busy <= 1'b1;
 					if( !spi_busy ) begin
 						spi_write <= 1'b1;
 						spi_read <= 1'b0;
@@ -179,6 +191,7 @@ module flash_ctl #(
 				`WRITE: begin
 					spi_write <= 1'b0;
 					spi_read <= 1'b0;
+					busy <= 1'b1;
 					if( !spi_busy ) begin
 						/* SPI is no longer busy, write has finished */
 						cmd <= 0;
@@ -190,6 +203,7 @@ module flash_ctl #(
 
 				`READ_BUBBLE: begin
 					/* Needed one more cycle to get things ready */
+					busy <= 1'b1;
 					if( !spi_busy ) begin
 						spi_write <= 1'b0;
 						spi_read <= 1'b1;
@@ -203,6 +217,7 @@ module flash_ctl #(
 				`READ: begin
 					spi_write <= 1'b0;
 					spi_read <= 1'b0;
+					busy <= 1'b1;
 					if( !spi_busy )begin
 						/* SPI is no longer busy, write has finished */
 						cmd <= cmd_save;
