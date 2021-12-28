@@ -104,7 +104,7 @@ module flash_ctl #(
 	always @(posedge clk or posedge reset) begin
 		if( reset ) begin
 			prev_wren <= 0;
-			busy <= 0;
+			busy <= 1;
 			spi_read <= 0;
 			spi_write <= 0;
 			cmd <= 0;
@@ -140,7 +140,7 @@ module flash_ctl #(
 						flash_state <= `READ_BUBBLE;
 
 						spi_write <= 1'b0;
-						spi_read <= 1'b1;
+						spi_read <= 1'b0;
 
 						busy <= 1'b1;
 

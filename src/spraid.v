@@ -82,6 +82,7 @@ module spraid(
 		.read_en(read),
 		.write_en(write),
 		.din(din),
+		.dout(dout),
 		.addr(addr),
 		.busy(busy),
 

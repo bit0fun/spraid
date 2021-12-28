@@ -8,7 +8,7 @@ async def reset(dut):
     dut.reset.value = 1
     await ClockCycles(dut.clk, 5)
     dut.reset.value = 0
-    await ClockCycles(dut.clk, 5)
+    await ClockCycles(dut.clk, 20)
 
 @cocotb.test()
 async def test_spraid(dut):
@@ -71,9 +71,6 @@ async def test_spraid(dut):
     # Should be in write finish 
     assert( dut.raid_module.op.value == 3 )
 
-    # Busy signal should be high 
-#    assert( dut.busy.value == 1 )
-
     # Check that data is striped
     assert( dut.spi0_din.value == 0x000000CD )
     assert( dut.spi1_din.value == 0x000000AB )
@@ -89,10 +86,6 @@ async def test_spraid(dut):
     assert( dut.spi2_busy.value == 1)
     assert( dut.spi3_busy.value == 1)
 
-    # Write should still be enabled 
-#    assert( dut.spi_write.value == 1 )
-#    assert( dut.spi_read.value == 0 )
-
 
     # Wait for not busy, finish writes 
     while( dut.busy.value == 1 or dut.spi0_busy.value == 1):
@@ -107,6 +100,44 @@ async def test_spraid(dut):
     await ClockCycles(dut.clk, 1)
 
 
+    # Test reads 
+    dut._log.info("\nRAID0 Read Test\n")
+
+    dut.write.value = 0
+    dut.read.value = 1
+    dut.addr.value = addr
+    dut.din.value = 0
+    dut.raid_type.value = raid0
+    dut.spi0_miso.value = 1
+    dut.spi1_miso.value = 0
+    dut.spi2_miso.value = 1
+    dut.spi3_miso.value = 0
+
+    # next cycle should be in OP_READ
+    await ClockCycles(dut.clk, 1)
+    # Remove address from input, clear write signal
+    dut.spi_addr.value = 0
+    dut.read.value = 0
+    await ClockCycles(dut.clk, 1)
+    assert( dut.raid_module.op.value == 4 ) # read wait 
+    await ClockCycles(dut.clk, 1)
+    assert( dut.spi_write.value == 0 )
+    assert( dut.spi_read.value == 1 )
 
 
 
+    # wait for busy
+    while( dut.busy.value == 0 ):
+        await ClockCycles(dut.clk, 1)
+
+    # Wait for not busy, finish writes 
+    while( dut.busy.value == 1 or dut.spi0_busy.value == 1):
+        await ClockCycles(dut.clk, 1)
+
+    # Should always be true, but better to check than not
+    assert( dut.busy.value == 0 )
+
+    await ClockCycles(dut.clk, 1)
+
+    dut._log.info("Read back data: %08x" %( dut.dout.value ))
+    await ClockCycles(dut.clk, 10)

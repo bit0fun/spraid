@@ -54,7 +54,9 @@ module raid #(
 	`define OP_READ	 		1
 	`define OP_WRITE	 	2
 	`define OP_WRITE_FINISH 3 /* Waiting for write to finish */
+	`define OP_READ_WAIT	4
 	reg [3:0] op;
+	reg [3:0] last_op;
 
 	/* Temporary storage */
 	//reg [31:0] tmp_addr;
@@ -149,11 +151,12 @@ module raid #(
 	assign w_raid5_d2 = tmp_data[23:16];
 	assign w_raid5_d3 = w_raid5_parity;
 
+	reg [31:0] dout_tmp;
 
 	always @( posedge clk or posedge reset ) begin
 		if( reset ) begin
 			dout <= 0;
-			busy <= 0;
+			busy <= 1;
 			parity <= 0;
 			err <= 0;
 
@@ -169,24 +172,33 @@ module raid #(
 			tmp_data <= 0;
 
 			drive_addr <= 0;
+			last_op <= `OP_NOP;
+
+			dout_tmp <= 0;
 
 		end
 		else begin
+
+			/* Store previous OP */
+			last_op <= op;
 		
-			/* Busy when drives are */
-			busy <= 1'b0;
+			/* Busy when drives are, but don't set busy otherwise. */
+			if( (busy == 0) && (drive_busy) ) begin
+				busy <= 1'b1;
+			end
+			else if( (busy == 1) && (!drive_busy) && (last_op == `OP_NOP ) )begin
+				busy <= 1'b0;
+			end
 			w_drives <= 1'b0;
 			r_drives <= 1'b0;
 
-			/* Common to all. Most likely can just keep this, since nothing
-			* alters this piece */
-		
+			dout <= dout_tmp;
+
 			case ( op )
 				`OP_NOP: begin
 					/* Determine operation */
 					if( write_en && !read_en ) begin
 						/* Writing */
-						busy <= 1'b1;
 						op <= `OP_WRITE;
 						drive_addr <= addr;
 						/* Output write signal, next cycle */
@@ -199,8 +211,7 @@ module raid #(
 					end
 					else if( !write_en && read_en ) begin
 						/* Reading */
-						busy <= 1'b1;
-						op <= `OP_READ;
+						op <= `OP_READ_WAIT;
 						drive_addr <= addr;
 						/* Output read signal next cycle */
 						w_drives <= 1'b0;
@@ -248,14 +259,24 @@ module raid #(
 					endcase 
 				end
 
+				`OP_READ_WAIT: begin
+					if( drive_busy ) begin
+						w_drives <= 1'b0;
+						r_drives <= 1'b0;
+						op <= `OP_READ;
+					end
+					else begin
+						w_drives <= 1'b0;
+						r_drives <= 1'b1;
+					end
+				end
+
 				`OP_READ: begin
-					w_drives <= 1'b0;
-					r_drives <= 1'b1;
 					case ( raid_type )
 						`TYPE_RAID0: begin
 							/* Read */
 							if( !drive_busy ) begin
-								dout <= r_raid0;
+								dout_tmp <= r_raid0;
 //								w_drives <= 1'b0;
 //								r_drives <= 1'b0;
 								op <= `OP_NOP;
@@ -271,7 +292,7 @@ module raid #(
 							/* Copied data */
 							/* Check if data is ready, and no issues */
 							if( !drive_busy && r_raid1_eq ) begin
-								dout <= r_raid1;//tmp_data;
+								dout_tmp <= r_raid1;//tmp_data;
 								op <= `OP_NOP;
 //								w_drives <= 1'b0;
 //								r_drives <= 1'b0;
@@ -282,7 +303,7 @@ module raid #(
 							* out */
 							else if( !drive_busy && !r_raid1_eq ) begin
 								err <= 1'b1;
-								dout <= 32'hFFFFFFFF;
+								dout_tmp <= 32'hFFFFFFFF;
 								op <= `OP_NOP;
 //								w_drives <= 1'b0;
 //								r_drives <= 1'b0;
@@ -304,7 +325,7 @@ module raid #(
 								op <= `OP_NOP;
 //								w_drives <= 1'b0;
 //								r_drives <= 1'b0;
-								dout <= r_raid5;
+								dout_tmp <= r_raid5;
 								tmp_data <= 0;
 							end
 							else begin
@@ -329,6 +350,7 @@ module raid #(
 //						w_drives <= 1'b0;
 //						r_drives <= 1'b0;
 						tmp_data <= 0;
+//						busy <= 1'b0;
 
 						w_drive_data0 <= 0;
 						w_drive_data1 <= 0;
