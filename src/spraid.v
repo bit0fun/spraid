@@ -18,8 +18,9 @@ module spraid(
 		input			write,
 		input [31:0]	addr,
 		input [31:0]	din,
-		output [31:0]	dout,
+		output reg [31:0]	dout,
 		output			busy,
+		output reg		wbs_ack_o,	/* needed for wishbone */
 
 		output			parity,
 		output			err,
@@ -73,16 +74,27 @@ module spraid(
 	wire [7:0] spi2_dout;
 	wire [7:0] spi3_dout;
 
+	wire [31:0] dout_tmp;
+
+	reg		last_cycle_busy;
+	reg		last_cycle_write;
+	reg		last_cycle_read;
+	wire raid_write = ( last_cycle_write && write) ? 1'b0 : write;
+	wire raid_read = ( last_cycle_read && read) ? 1'b0 : read;
+	wire wbs_ack;
+	reg last_wbs_ack;
+	assign wbs_ack = last_cycle_busy & ~busy;
+
 	raid raid_module(
 		.reset(reset),
 		.clk(clk),
 
 		/* Host control */
 		.raid_type(raid_type),
-		.read_en(read),
-		.write_en(write),
+		.read_en(raid_read),
+		.write_en(raid_write),
 		.din(din),
-		.dout(dout),
+		.dout(dout_tmp),
 		.addr(addr),
 		.busy(busy),
 
@@ -189,5 +201,35 @@ module spraid(
 		.spi_miso(spi3_miso)
 
 	);
+
+	always @(posedge clk or posedge reset ) begin
+		if( reset ) begin
+			wbs_ack_o <= 0;
+			last_wbs_ack <= 0;
+			dout <= 0;
+			last_cycle_busy <= 1;
+			last_cycle_read <= 0;
+			last_cycle_write <= 0;
+		end
+		else begin
+			last_wbs_ack <= wbs_ack;
+			if( last_wbs_ack && !wbs_ack ) begin
+				wbs_ack_o <= 1'b1;
+			end
+			else if ( last_wbs_ack && wbs_ack ) begin
+				wbs_ack_o <= 1'b1;
+			end
+			else if( !last_wbs_ack && wbs_ack ) begin
+				wbs_ack_o <= 1'b1;
+			end
+			else begin
+				wbs_ack_o <= 1'b0;
+			end
+			dout <= dout_tmp;
+			last_cycle_busy <= busy;
+			last_cycle_read <= read;
+			last_cycle_write <= write;
+		end
+	end
 
 endmodule

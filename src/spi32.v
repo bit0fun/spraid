@@ -165,11 +165,11 @@ module spi32 (
 						bytes2write <= nbytes;
 					end
 					else if( !write && read ) begin
-						/* Implement reads later */
 						tmp_busy <= 1'b1;
 						spi_state = `SPI_WRITE_FIFO;
 						/* Used to change states later */
 						read_flag <= 1'b1;
+						bytes2write <= nbytes;
 					end
 	
 	
@@ -270,6 +270,7 @@ module spi32 (
 				`SPI_READ_OUT: begin
 					if( spi_rx_ready ) begin
 						spi_state <= `SPI_IDLE;
+						
 					end
 	
 				end
