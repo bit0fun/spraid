@@ -19,9 +19,11 @@ module wb_spraid (
 	input			wb_cyc_i,
 	output			wb_stall_o,
 	output			wb_err_o,
-	input			wb_lock_i,
+	/* Not used */
+//	input			wb_lock_i,
 	output			wb_rty_o,
-	input  [3:0]	wb_sel_i,
+	/* Not used */
+//	input  [3:0]	wb_sel_i,
 	input			wb_stb_i,
 	input			wb_we_i,
 
