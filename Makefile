@@ -14,6 +14,7 @@ SRC_RAID= src/raid.v
 SRC_SPI32= src/spi32.v src/spi_master.v $(SRC_SYNCFIFO) $(SRC_PLOADSHIFT)
 SRC_FLASHCTL = src/flash_ctl.v $(SRC_SPI32)
 SRC_SPRAID= src/spraid.v $(SRC_RAID) $(SRC_FLASHCTL)
+SRC_WBSPRAID= src/wb_spraid.v $(SRC_SPRAID)
 SRC= $(SRC_SPRAID)
 
 # Simulation Sources 
@@ -98,10 +99,16 @@ test_flash_ctl: $(SRC_FLASHCTL) test/dump_flash_ctl.v
 	PYTHONOPTIMIZE=${NOASSERT} MODULE=test.$@ $(VSIM) $(VSIM_MODULES)
 
 
-test_spraid: $(SRC) 
+test_spraid: $(SRC) test/dump_spraid.v
 	rm -rf sim_build
 	mkdir -p sim_build
 	$(VC) -o sim_build/sim.vvp -s spraid -s dump -g2012 $^ test/dump_spraid.v
+	PYTHONOPTIMIZE=${NOASSERT} MODULE=test.$@ $(VSIM) $(VSIM_MODULES)
+
+test_wb_spraid: $(SRC_WBSPRAID)  test/dump_wb_spraid.v
+	rm -rf sim_build
+	mkdir -p sim_build
+	$(VC) -o sim_build/sim.vvp -s wb_spraid -s dump -g2012 $^
 	PYTHONOPTIMIZE=${NOASSERT} MODULE=test.$@ $(VSIM) $(VSIM_MODULES)
 
 
