@@ -116,11 +116,11 @@ async def test_spraid(dut):
     # next cycle should be in OP_READ
     await ClockCycles(dut.clk, 1)
     # Remove address from input, clear write signal
-    dut.spi_addr.value = 0
     dut.read.value = 0
     await ClockCycles(dut.clk, 1)
     assert( dut.raid_module.op.value == 4 ) # read wait 
     await ClockCycles(dut.clk, 1)
+    dut.spi_addr.value = 0
     assert( dut.spi_write.value == 0 )
     assert( dut.spi_read.value == 1 )
 

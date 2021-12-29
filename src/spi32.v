@@ -9,7 +9,8 @@ module spi32 (
 		input				write,
 
 		input  [31:0]		din,
-		output [31:0]		dout,
+//		output [31:0]		dout,
+		output reg [31:0]	dout,
 
 		/* Get size for command */
 		input [1:0]			nbytes,
@@ -63,7 +64,7 @@ module spi32 (
 
 	wire[7:0]  spi_out;
 
-	assign dout = {24'b0, spi_out};
+//	assign dout = {24'b0, spi_out};
 
 	reg fifo_early_reset;
 	
@@ -138,6 +139,7 @@ module spi32 (
 
 	always @(posedge clk or posedge reset) begin
 		if( reset ) begin
+			dout <= 32'b0;
 			fifo_early_reset <= 0;
 			bytes2write <= 0;
 			read_flag <= 0;
@@ -148,6 +150,11 @@ module spi32 (
 			tmp_busy <= 0;
 		end
 		else begin
+
+			/* Only update data when it is valid */
+			if( spi_rx_ready ) begin
+				dout <= {24'b0, spi_out};
+			end
 
 			case ( spi_state )
 				`SPI_IDLE: begin
