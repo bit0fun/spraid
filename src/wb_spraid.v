@@ -53,6 +53,10 @@ module wb_spraid (
 
 );
 
+	/* not used */
+	assign wb_rty_o = 1'b0;
+	assign wb_err_o = 1'b0;
+
 	reg [31:0] buf_data_o;
 	wire [31:0] w_data_o;
 	assign wb_dat_o = buf_data_o;
