@@ -112,13 +112,20 @@ test_wb_spraid: $(SRC_WBSPRAID)  test/dump_wb_spraid.v
 	PYTHONOPTIMIZE=${NOASSERT} MODULE=test.$@ $(VSIM) $(VSIM_MODULES)
 
 
+test_flash_model: $(SRC_WBSPRAID)  test/dump_wb_spraid.v
+	rm -rf sim_build
+	mkdir -p sim_build
+	$(VC) -o sim_build/sim.vvp -s wb_spraid -s dump -g2012 $^
+	PYTHONOPTIMIZE=${NOASSERT} MODULE=test.$@ $(VSIM) $(VSIM_MODULES)
+
+
+
+
+
 formal_all: formal_sync_fifo
 
 formal_%: formal/%.sby src/%.v 
 	sby -f $<
-
-show_raid0_write: raid0_write.vcd gtkwave/raid0_write.gtkw
-	gtkwave $^
 
 show_%: %.vcd gtkwave/%.gtkw
 	gtkwave $^

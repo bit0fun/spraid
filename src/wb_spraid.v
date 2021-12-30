@@ -4,10 +4,10 @@
 
 /* Define base address to be accessed at */
 `define WB_ADDR_BASE		32'h30000000
-`define SPRAID_MEM_SZ		32'h3FF
+`define SPRAID_MEM_SZ		32'h7FF
 `define SPRAID_ADR_MAX		(`WB_ADDR_BASE + `SPRAID_MEM_SZ)
-`define SPRAID_RAID_TYPE	(`WB_ADDR_BASE + 32'h400)
-`define SPRAID_STATUS		(`WB_ADDR_BASE + 32'h401)
+`define SPRAID_RAID_TYPE	(`WB_ADDR_BASE + `SPRAID_MEM_SZ + 1)
+`define SPRAID_STATUS		(`WB_ADDR_BASE + `SPRAID_MEM_SZ + 2)
 
 module wb_spraid (
 	input			wb_clk_i,
@@ -59,6 +59,13 @@ module wb_spraid (
 	assign wb_rty_o = 1'b0;
 	assign wb_err_o = 1'b0;
 
+	wire addr_in_bounds;
+	wire addr_status;
+	wire addr_raid_type;
+	assign addr_in_bounds = ((wb_adr_i - `WB_ADDR_BASE) < `SPRAID_MEM_SZ);
+	assign addr_raid_type = ( wb_adr_i == `SPRAID_RAID_TYPE );
+	assign addr_status = ( wb_adr_i == `SPRAID_STATUS );
+
 	reg [31:0] buf_data_o;
 	wire [31:0] w_data_o;
 	assign wb_dat_o = buf_data_o;
@@ -86,7 +93,8 @@ module wb_spraid (
 	wire ack;
 
 	assign wb_ack_o = buf_wb_ack_o;
-	assign ack = last_cycle_busy & ~spraid_busy ;
+	assign ack = (last_cycle_busy & ~spraid_busy);
+
 
 
 	/* Register to save raid_type */
@@ -147,59 +155,59 @@ module wb_spraid (
 
 			buf_wb_ack_o <= 0;
 			last_wb_ack_o <= 0;
-			reg_access_ack <= 1'b0;
 
 		end
 		else begin
-
-			if( reg_access_ack == 1 || (~wb_stb_i) && ~(wb_cyc_i) ) begin
-				reg_access_ack <= 1'b0;
+			last_cycle_busy  <= spraid_busy;
+			if( (ack | reg_access_ack) & (wb_stb_i) & (wb_cyc_i) ) begin
+				reg_access_ack <= 0;
+				buf_wb_ack_o <= 1;
 			end
-
-			if( buf_wb_ack_o == 1 || ~(wb_stb_i) && ~(wb_cyc_i) ) begin
-				buf_wb_ack_o <= 1'b0;
+			else if( !(wb_stb_i) & !(wb_cyc_i) ) begin
+				reg_access_ack <= 0;
+				buf_wb_ack_o <= 0;
+			end
+			else if( spraid_busy ) begin
+				reg_access_ack <= 0;
+				buf_wb_ack_o <= 0;
 			end
 			else begin
-				buf_wb_ack_o <= ack;
+				buf_wb_ack_o <= 0;
 			end
 
 			/* Fill status register */
 			status <= { spraid_parity, spraid_err, spraid_busy };
 
 			/* Operations depending upon address */
-			case( wb_adr_i )
-				`WB_ADDR_BASE: begin
-					if( read ) begin
-						buf_data_o <= w_data_o;
-					end
-
-					/* Writes are handled without issue; just data in */
-
+			if( addr_in_bounds ) begin
+				if( read ) begin
+					buf_data_o <= w_data_o;
 				end
 
-				`SPRAID_RAID_TYPE: begin
+				/* Writes are handled without issue; just data in */
+
+			end
+			else if( wb_adr_i == `SPRAID_RAID_TYPE) begin
+				if( read ) begin
 					reg_access_ack <= 1'b1;
-					if( read ) begin
-						buf_data_o <= { 24'b0, raid_type};
-					end
-					if( write ) begin
-						raid_type <= wb_dat_i[7:0];
-					end
-
+					buf_data_o <= { 24'b0, raid_type};
 				end
-
-				`SPRAID_STATUS: begin
+				if( write ) begin
 					reg_access_ack <= 1'b1;
-					if( read ) begin
-						buf_data_o <= { 24'b0, status};
-					end
-
-					/* Can't write to status */
-
+					raid_type <= wb_dat_i[7:0];
 				end
 
-			endcase
+			end
 
+			else if( wb_adr_i == `SPRAID_STATUS) begin
+				if( read ) begin
+					reg_access_ack <= 1'b1;
+					buf_data_o <= { 24'b0, status};
+				end
+
+				/* Can't write to status */
+
+			end
 
 		end
 
